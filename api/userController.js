@@ -3,7 +3,6 @@ const books = require("../Models/Book");
 const jwt = require("jsonwebtoken");
 var nodemailer = require("nodemailer");
 var cloudinary = require("cloudinary").v2;
-const streamifier = require("streamifier");
 const multer = require("multer");
 const htmlPdf = require("html-pdf");
 
@@ -11,7 +10,7 @@ var fs = require("fs");
 var path = require("path");
 var ejs = require("ejs");
 
-exports.imageUpload = async function (req, res, next) {
+exports.imageUpload = function (req, res, next) {
   const file = req.file;
   if (!file) {
     const error = new Error("Please choose a file...!!!");
@@ -229,7 +228,7 @@ exports.publishBook = async (req, res) => {
       res.status(400).send({
         success: false,
         message:
-          "You have no authority to publish Books, Only admin can publish books",
+          "You have no authority to publish Books, Only Admin can puublish books",
       });
     }
   } catch (error) {
@@ -293,9 +292,9 @@ exports.assignRoleToUser = async (req, res) => {
     const publisher = await user.findOne({ _id: publisherId });
 
     if (publisher.userRole == "Admin") {
-      return res
-        .status(400)
-        .send({ success: false, mesage: "You are already Admin...!!!" });
+      res
+        .status(404)
+        .send({ success: false, message: "You are already an Admin...!!!" });
     }
     if (!publisher) {
       return res.status(400).send({ message: "Invalid user Id" });
@@ -318,28 +317,35 @@ exports.buyBooks = async (req, res) => {
     const booktitle = req.body.bookTitle;
     const quantity = req.body.quantity;
     const searchBook = await books.findOne({ bookTitle: booktitle });
-
+    if (!quantity) {
+      return res.status(404).send({
+        success: false,
+        message: "Please mention the quantity you want to buy books...!!!",
+      });
+    }
     console.log(searchBook);
     if (!searchBook) {
-      return res
-        .status(400)
-        .send({ success: false, message: "Book not found" });
+      return res.status(400).send({
+        success: false,
+        message: "This Book are not available in Stock...!!",
+      });
     }
     if (searchBook.totalBooksAmount < quantity) {
       return res.status(400).send({
         success: false,
         message: `Sorry! Books are not available in such Quantity, only ${searchBook.totalBooksAmount} available in Stock`,
       });
-    }
-    const totalBooksAmount = searchBook.totalBooksAmount - quantity;
-    await books.findByIdAndUpdate(searchBook._id, {
-      totalBooksAmount: totalBooksAmount,
-    });
+    } else {
+      const totalBooksAmount = searchBook.totalBooksAmount - quantity;
+      await books.findByIdAndUpdate(searchBook._id, {
+        totalBooksAmount: totalBooksAmount,
+      });
 
-    return res.status(200).send({
-      success: true,
-      message: "You have Buy books Successfully! Thankyou...",
-    });
+      res.status(200).send({
+        success: true,
+        message: "You have Buy books Successfully! Thankyou...",
+      });
+    }
   } catch (error) {
     // console.log(error);
     res.status(500).send({ message: "Internal Server Error...!!!", error });

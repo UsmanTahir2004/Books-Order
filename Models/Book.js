@@ -6,7 +6,7 @@ const bookSchema = new Schema({
   author: ObjectId,
   bookTitle: { type: String, required: true, unique: true },
   bookPrice: { type: Number },
-  totalBooksAmount: { type: String },
+  totalBooksAmount: { type: Number },
   user_id: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
 });
 
